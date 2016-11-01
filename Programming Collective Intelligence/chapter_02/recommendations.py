@@ -59,7 +59,6 @@ def sim_distance(prefs, person1, person2):
     :param person2: 评分表中人
     :return: 0-1之间的数， 1表示偏好完全一样， 0表示不相关
     """
-
     # 相似表
     si = dict()
 
