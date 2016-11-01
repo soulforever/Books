@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+第二章习题1，使用谷本(Tanimoto)相似度评价，同时加入了余弦相似度评价
+
+注意：
+    谷本相似度评价在只有0和1值时，和有非bit值时的计算公式是统一的
+    这里由于是使用了非bit值，所以需要使用点积来计算
+    具体链接: https://en.wikipedia.org/wiki/Jaccard_index
+"""
 
 __author__ = 'guti'
 
