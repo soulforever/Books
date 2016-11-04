@@ -57,7 +57,7 @@ def sim_distance(prefs, person1, person2):
     :param prefs: 评分表
     :param person1: 评分表中人
     :param person2: 评分表中人
-    :return: 0-1之间的数， 1表示偏好完全一样， 0表示不相关
+    :return: 0-1之间的数, 1表示偏好完全一样, 0表示不相关
     """
     # 相似表
     si = dict()
@@ -84,7 +84,7 @@ def sim_pearson(prefs, p1, p2):
     :param prefs: 评分表
     :param p1: 评分表中人
     :param p2: 评分表中人
-    :return: 相关系数为-1到1的数， 1表示完全相同的看法
+    :return: 相关系数为-1到1的数, 1表示完全相同的看法
     """
     # 获取两人共有的属性
     si = dict()
@@ -121,11 +121,11 @@ def top_matches(prefs, person, n=5, similarity=sim_pearson):
     :param prefs: 评分表
     :param person: 待计算的用户
     :param n: 取n个最相似的其他用户
-    :param similarity: 相似度计算方法，这里包括sim_pearson和sim_distance
-    :return: 一个由元组(相似度, 其他用户)组成的列表，长度为n
+    :param similarity: 相似度计算方法,这里包括sim_pearson和sim_distance
+    :return: 一个由元组(相似度, 其他用户)组成的列表,长度为n
     """
     # 计算一个用户和其他的相似度
-    # 使用元组(相似度， 其他用户)存储
+    # 使用元组(相似度, 其他用户)存储
     scores = [(similarity(prefs, person, other), other) for other in prefs if other != person]
 
     scores.sort()
@@ -140,7 +140,7 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
     为用户A推荐他没有看过的电影
     :param prefs: 评分表
     :param person: 待计算的用户
-    :param similarity: 相似度计算方法，这里包括sim_pearson和sim_distance
+    :param similarity: 相似度计算方法,这里包括sim_pearson和sim_distance
     :return: 一个由元组(估算评分, 其他用户)组成的列表
     """
     # 评分权重总计表
@@ -159,7 +159,7 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
         if sim <= 0:
             continue
 
-        # 对每一部评分电影，计算评分权重总和，统计用户相似度和
+        # 对每一部评分电影,计算评分权重总和,统计用户相似度和
         for item in prefs[other]:
             if item not in prefs[person] or prefs[person][item] == 0:
                 totals.setdefault(item, 0)
@@ -171,7 +171,7 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
                 sim_sum.setdefault(item, 0)
                 sim_sum[item] += sim
 
-    # 排序，以元组(评分权重总和/相似度总和， 电影名称)存储
+    # 排序,以元组(评分权重总和/相似度总和, 电影名称)存储
     rankings = [(total/sim_sum[item], item) for item, total in totals.iteritems()]
     rankings.sort(reverse=True)
     return rankings
@@ -179,7 +179,7 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
 
 def _transform_prefs(prefs):
     """
-    帮助函数，用于转置评分表
+    帮助函数,用于转置评分表
     :param prefs: 原评分表
     :return: 一个转置后的评分表
     """
@@ -188,8 +188,32 @@ def _transform_prefs(prefs):
         for item in prefs[person]:
             result.setdefault(item, {})
 
-            # 用户电影字典，转换为电影用户字典
+            # 用户电影字典,转换为电影用户字典
             result[item][person] = prefs[person][item]
+    return result
+
+
+def calculate_similar_items(prefs, n=10):
+    """
+    寻找相似的物品,通过评分表转置,复用求最相似的top_matches函数
+    :param prefs: 评分表
+    :param n: 相似个数
+    :return: n个最相似的物品,及其评分
+    """
+    # 相似物品表
+    result = dict()
+    # 对评分表转置把物品作为外层键
+    item_prefs = _transform_prefs(prefs)
+
+    c = 0
+    for item in item_prefs:
+        c += 1
+        if c % 100 == 0:
+            # 状态更新,类似进度条
+            print '%d / %d' % (c, len(item_prefs))
+            # 对转置后的表求出最相似的物品
+            scores = top_matches(item_prefs, item, n=n, similarity=sim_distance)
+            result[item] = scores
     return result
 
 
@@ -203,12 +227,15 @@ if __name__ == '__main__':
     print '\n与 Toby 最相似的3个人'
     print top_matches(critics, 'Toby', n=3)
 
-    print '\n给 Toby 推荐电影，使用皮尔逊相关系数计算'
+    print '\n给 Toby 推荐电影,使用皮尔逊相关系数计算'
     print get_recommendations(critics, 'Toby')
 
-    print '\n给 Toby 推荐电影，使用欧几里得距离评价计算'
+    print '\n给 Toby 推荐电影,使用欧几里得距离评价计算'
     print get_recommendations(critics, 'Toby', similarity=sim_distance)
 
-    print '\n通过用户们对各个电影的评分，计算Superman Returns最相近的电影列表'
+    print '\n通过用户们对各个电影的评分,计算Superman Returns最相近的电影列表'
     movies = _transform_prefs(critics)
     print top_matches(movies, 'Superman Returns')
+
+    print '\n计算最相似的物品,使用欧几里得距离'
+    print calculate_similar_items(critics)
