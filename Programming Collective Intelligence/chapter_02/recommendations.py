@@ -212,8 +212,8 @@ def calculate_similar_items(prefs, n=10):
             # 状态更新,类似进度条
             print '%d / %d' % (c, len(item_prefs))
             # 对转置后的表求出最相似的物品
-            scores = top_matches(item_prefs, item, n=n, similarity=sim_distance)
-            result[item] = scores
+        scores = top_matches(item_prefs, item, n=n, similarity=sim_distance)
+        result[item] = scores
     return result
 
 
