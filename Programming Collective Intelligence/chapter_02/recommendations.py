@@ -217,6 +217,43 @@ def calculate_similar_items(prefs, n=10):
     return result
 
 
+def get_recommended_items(prefs, item_match, user):
+    """
+    为指定用户推荐商品,使用相似物品表
+    由于相似物品表只需要一次计算就可多次使用,这样的效率更高
+    :param prefs: 相似表
+    :param item_match: 使用calculate_similar_items计算出来的相似物品表
+    :param user: 需要物品推荐服务的用户
+    :return: 推荐排行表
+    """
+    # 某个用户的评分表
+    user_rating = prefs[user]
+    # 物品的带权重的用户评分
+    scores = dict()
+    # 物品的相似度总和
+    total_sim = dict()
+
+    for (item, rating) in user_rating.items():
+        for (similarity, item2) in item_match[item]:
+
+            # 用户评分过的不做计算
+            if item2 in user_rating:
+                continue
+
+            # 用户没有评分的物品求加权和
+            scores.setdefault(item2, 0)
+            scores[item2] += similarity * rating
+
+            # 物品的相似度总和
+            total_sim.setdefault(item2, 0)
+            total_sim[item2] += similarity
+
+    # 合计加权和除以相似度总和的物品列表
+    rankings = [(score / total_sim[item], item) for item, score in scores.items()]
+    rankings.sort(reverse=True)
+    return rankings
+
+
 if __name__ == '__main__':
     print 'Lisa Rose 与 Gene Seymour 的欧几里得距离评价'
     print sim_distance(critics, 'Lisa Rose', 'Gene Seymour')
@@ -233,9 +270,13 @@ if __name__ == '__main__':
     print '\n给 Toby 推荐电影,使用欧几里得距离评价计算'
     print get_recommendations(critics, 'Toby', similarity=sim_distance)
 
-    print '\n通过用户们对各个电影的评分,计算Superman Returns最相近的电影列表'
+    print '\n通过用户们对各个电影的评分,计算 Superman Returns 最相近的电影列表'
     movies = _transform_prefs(critics)
     print top_matches(movies, 'Superman Returns')
 
     print '\n计算最相似的物品,使用欧几里得距离'
-    print calculate_similar_items(critics)
+    item_sim = calculate_similar_items(critics)
+    print item_sim
+
+    print '\n给 Toby 的推荐电影,使用物品相似度表'
+    print get_recommended_items(critics, item_sim, 'Toby')
