@@ -146,7 +146,7 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
     # 评分权重总计表
     totals = dict()
     # 用户相似度总计表
-    sim_sum = dict()
+    sim_sums = dict()
     for other in prefs:
         # 不计算与自身的相似度
         if other == person:
@@ -168,11 +168,11 @@ def get_recommendations(prefs, person, similarity=sim_pearson):
                 totals[item] += prefs[other][item] * sim
 
                 # 相似度之和统计
-                sim_sum.setdefault(item, 0)
-                sim_sum[item] += sim
+                sim_sums.setdefault(item, 0)
+                sim_sums[item] += sim
 
     # 排序,以元组(评分权重总和/相似度总和, 电影名称)存储
-    rankings = [(total/sim_sum[item], item) for item, total in totals.iteritems()]
+    rankings = [(total/sim_sums[item], item) for item, total in totals.iteritems()]
     rankings.sort(reverse=True)
     return rankings
 
@@ -195,7 +195,7 @@ def _transform_prefs(prefs):
 
 def calculate_similar_items(prefs, n=10):
     """
-    寻找相似的物品,通过评分表转置,复用求最相似的top_matches函数
+    计算相似物品表,通过评分表转置,复用求最相似的top_matches函数
     :param prefs: 评分表
     :param n: 相似个数
     :return: n个最相似的物品,及其评分
@@ -211,7 +211,7 @@ def calculate_similar_items(prefs, n=10):
         if c % 100 == 0:
             # 状态更新,类似进度条
             print '%d / %d' % (c, len(item_prefs))
-            # 对转置后的表求出最相似的物品
+        # 对转置后的表求出最相似的物品
         scores = top_matches(item_prefs, item, n=n, similarity=sim_distance)
         result[item] = scores
     return result
