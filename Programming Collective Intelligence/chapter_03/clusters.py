@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 from math import sqrt
+from PIL import Image, ImageDraw
 
 __author__ = 'Guti'
 
@@ -153,7 +154,100 @@ def print_clust(clust, labels=None, n=0):
         print_clust(clust.right, labels=labels, n=n+1)
 
 
+def get_height(clust):
+    """
+    获取二叉树表示的分级聚类结果的高度和.
+    :param clust: 二叉树的根节点.
+    :return: 树高和.
+    """
+    # 叶子节点的高度为一
+    if clust.left is None and clust.right is None:
+        return 1
+    # 分支节点的高度等于左右树的和
+    else:
+        return get_height(clust.left) + get_height(clust.right)
+
+
+def get_depth(clust):
+    """
+    节点误差深度,即所属每个分支的最大误差.
+    :param clust: 二叉树根节点.
+    :return: 误差和.
+    """
+    # 叶子节点的距离是0.0
+    if clust.left is None and clust.right is None:
+        return 0
+    # 分支节点的距离等于左右分支距离较大者,加分支节点自身的距离
+    return max(get_depth(clust.left), get_depth(clust.right)) + clust.distance
+
+
+def drawdendrogram(clust, labels, jpeg='clusters.jpg'):
+    """
+    创建绘图板,每个聚类占20像素.调整根节点位置到中心.
+    :param clust: 二叉树根节点.
+    :param labels: 标签的列表,用于展示.
+    :param jpeg: 图片路径和名称.
+    :return: None.
+    """
+    # 图像高度和宽度
+    height = get_height(clust) * 20
+    width = 1200
+    depth = get_depth(clust)
+
+    # 单位误差深度所占的像素
+    scaling = float(width - 150) / depth
+
+    # 新建画板
+    img = Image.new('RGB', (width, height), (255, 255, 255))
+    draw = ImageDraw.Draw(img)
+
+    draw.line((0, height/2, 10, height/2), fill=(255, 0, 0))
+
+    draw_node(draw, clust, 10, height/2, scaling, labels)
+    img.save(jpeg, 'JPEG')
+
+
+def draw_node(draw, clust, x, y, scaling, labels):
+    """
+    绘制每一个聚类节点, 包括聚类的指示线.
+    :param draw: 绘图板引用.
+    :param clust: 二叉树根节点.
+    :param x: 绘图起始x座标.
+    :param y: 绘图起始y座标.
+    :param scaling: 缩放值,即单位误差锁占像素.
+    :param labels: 标签的列表,用于展示.
+    :return: None.
+    """
+    if clust.id < 0:
+        # 如果是分支节点
+        height_1 = get_height(clust.left) * 20
+        height_2 = get_height(clust.right) * 20
+
+        top = y - (height_1 + height_2) / 2
+        bottom = y + (height_1 + height_2) / 2
+
+        # 线长,由单位误差所占的像素 乘以 节点的误差
+        line_len = clust.distance * scaling
+
+        # 到子类的垂直线
+        draw.line((x, top+height_1/2, x, bottom-height_2/2), fill=(255, 0, 0))
+
+        # 连接左侧节点
+        draw.line((x, top+height_1/2, x+line_len, top+height_1/2),fill=(255, 0, 0))
+
+        # 连接右侧节点
+        draw.line((x, bottom-height_2/2, x+line_len, bottom-height_2/2), fill=(255, 0, 0))
+
+        # 画左右子树
+        draw_node(draw, clust.left, x+line_len, top+height_1/2, scaling, labels)
+        draw_node(draw, clust.right, x+line_len, bottom-height_2/2, scaling, labels)
+    else:
+        # 否则是叶子节点,直接打印标签
+        draw.text((x+5, y-7), labels[clust.id], (0, 0, 0))
+
+
 if __name__ == '__main__':
     blog_titles, words, vec_data = readfile('blogdata.txt')
     clust_result = hcluster(vec_data)
-    print_clust(clust_result, labels=blog_titles)
+#    print_clust(clust_result, labels=blog_titles)
+    drawdendrogram(clust_result, blog_titles, jpeg='blogclust.jpg')
