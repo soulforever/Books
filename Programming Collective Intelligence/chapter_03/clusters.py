@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+import random
 from math import sqrt
 from PIL import Image, ImageDraw
 
@@ -39,7 +40,7 @@ def pearson(v1, v2):
         不同的文章的词汇量不同,所以模长不一定相同.
     :param v1: 向量,使用列表表示.
     :param v2: 向量,使用列表表示.
-    :return: 当完全匹配返回1.0, 完全不相关返回0.0
+    :return: 当完全匹配返回1.0, 完全不相关返回0.0.
     """
     # 向量分量和
     sum1 = sum(v1)
@@ -233,7 +234,7 @@ def draw_node(draw, clust, x, y, scaling, labels):
         draw.line((x, top+height_1/2, x, bottom-height_2/2), fill=(255, 0, 0))
 
         # 连接左侧节点
-        draw.line((x, top+height_1/2, x+line_len, top+height_1/2),fill=(255, 0, 0))
+        draw.line((x, top+height_1/2, x+line_len, top+height_1/2), fill=(255, 0, 0))
 
         # 连接右侧节点
         draw.line((x, bottom-height_2/2, x+line_len, bottom-height_2/2), fill=(255, 0, 0))
@@ -260,17 +261,99 @@ def rotate_matrix(data):
     return new_data
 
 
+def kmeans_cluster(rows, distance=pearson, k=4):
+    """
+    k均值聚类实现.
+    随机k个中心点,跟据距离对数据分类;分类结果重新计算中心点;重复上述过程.
+    :param rows: 聚类的数据表.
+    :param distance: 评价紧密度的函数.
+    :param k: 簇的个数.
+    :return: 一个长为k的列表,每一行代表该簇所包含的节点.
+    """
+    # 数据集没一列的范围
+    ranges = [(min([row[i] for row in rows]), max([row[i] for row in rows])) for i in range(len(rows[0]))]
+
+    # 随机创建K个中心点
+    clusters = [[random.random() * (ranges[i][1] - ranges[i][0]) + ranges[i][0]
+                for i in range(len(rows[0]))] for _ in range(k)]
+
+    last_matches = best_matches = None
+    for t in range(100):
+        print 'Iteration %d' % t
+        best_matches = [list() for _ in range(k)]
+
+        # 每一行中寻找距离最近的中心点
+        for j in range(len(rows)):
+            row = rows[j]
+            best_match = 0
+            for i in range(k):
+                d = distance(clusters[i], row)
+                if d < distance(clusters[best_match], row):
+                    best_match = i
+            # 对数据集中每一行归类到相应的簇
+            best_matches[best_match].append(j)
+
+        # 如果上次计算结果与这一次相同,过程结束
+        if best_matches == last_matches:
+            break
+        last_matches = best_matches
+
+        # 中心点位置更新
+        for i in range(k):
+            averages = [.0] * len(rows[0])
+            if len(best_matches[i]) > 0:
+                for row_id in best_matches[i]:
+                    for m in range(len(rows[row_id])):
+                        averages[m] += rows[row_id][m]
+                for j in range(len(averages)):
+                    averages[j] /= len(best_matches[i])
+                clusters[i] = averages
+    return best_matches
+
+
+def tanimoto(v1, v2):
+    """
+    谷本相似系数计算.
+    :param v1: 向量,使用列表表示.
+    :param v2: 向量,使用列表表示.
+    :return: 当不存在相同的喜欢项时为1.0, 当用户都喜欢两个向量中的物品时为0.0.
+    """
+    c1, c2, shr = 0, 0, 0
+
+    for i in range(len(v1)):
+        if v1[i] != 0:
+            c1 += 1
+        if v2[i] != 0:
+            c2 += 1
+        if v1[i] != 0 and v2[i] != 0:
+            shr += 1
+    return 1.0 - float(shr) / (c1 + c2 - shr)
+
+
 if __name__ == '__main__':
     blog_titles, words, vec_data = readfile('blogdata.txt')
     blog_clust = hcluster(vec_data)
-    print '打印分级聚类到命令行:'
-    print_clust(blog_clust, labels=blog_titles)
+    # print '打印分级聚类到命令行:'
+    # print_clust(blog_clust, labels=blog_titles)
+    #
+    # print '绘制分级聚类图像:',
+    # drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
+    # print '绘制完成,图像已存储.'
+    #
+    # print '绘制单词的分级聚类:',
+    # rotate_data = rotate_matrix(vec_data)
+    # word_clust = hcluster(rotate_data)
+    # drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
+    # print '绘制完成,图像已存储.'
+    #
+    # print 'k均值聚类结果:'
+    # k_clust = kmeans_cluster(vec_data, k=10)
+    # print [blog_titles[r] for r in k_clust[0]]
 
-    print '绘制分级聚类图像:'
-    drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
+    print '针对zebo数据集计算并绘制图像:',
+    wants, people, data = readfile('zebo.txt')
+    wants_clust = hcluster(data, distance=tanimoto)
+    drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
+    print '绘制完成,图像已存储.'
 
-    print '绘制单词的分级聚类:'
-    rotate_data = rotate_matrix(vec_data)
-    word_clust = hcluster(rotate_data)
-    drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
     print '<结束>'
