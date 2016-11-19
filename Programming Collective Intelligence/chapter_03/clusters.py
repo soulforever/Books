@@ -213,8 +213,8 @@ def draw_node(draw, clust, x, y, scaling, labels):
     绘制每一个聚类节点, 包括聚类的指示线.
     :param draw: 绘图板引用.
     :param clust: 二叉树根节点.
-    :param x: 绘图起始x座标.
-    :param y: 绘图起始y座标.
+    :param x: 绘图起始x坐标.
+    :param y: 绘图起始y坐标.
     :param scaling: 缩放值,即单位误差锁占像素.
     :param labels: 标签的列表,用于展示.
     :return: None.
@@ -330,6 +330,79 @@ def tanimoto(v1, v2):
     return 1.0 - float(shr) / (c1 + c2 - shr)
 
 
+def scale_down(data, distance=pearson, rate=.001):
+    """
+    将多维数据降维后,投射到二维空间.
+    :param data: 数据向量集.
+    :param distance: 距离计算函数.
+    :param rate: 移动比例.
+    :return: 投射到二维平面的坐标.
+    """
+    n = len(data)
+
+    # 没一队数据项之间的真实距离
+    real_dist = [[distance(data[i], data[j]) for j in range(n)] for i in range(n)]
+    outer_sum = .0
+
+    # 随机初始化节点在二维空间的起始位置
+    loc = [[random.random(), random.random()] for _ in range(n)]
+    fake_dist = [[.0 for j in range(n)] for i in range(n)]
+
+    last_error = None
+    for m in range(1000):
+        # 投影后的距离
+        for i in range(n):
+            for j in range(n):
+                fake_dist[i][j] = sqrt(sum([pow(loc[i][x] - loc[j][x], 2)
+                                            for x in range(len(loc[i]))]))
+
+        # 节点移动到的位置
+        grad = [[.0, .0] for _ in range(n)]
+
+        total_error = 0
+        for k in range(n):
+            for j in range(n):
+                if j == k:
+                    continue
+                # 误差值等于目标距离与当前距离的差值百分比
+                error_term = (fake_dist[j][k] - real_dist[j][k]) / real_dist[j][k]
+                # 每一个节点都需要根据误差的多少移动
+                grad[k][0] += ((loc[k][0] - loc[j][0]) / fake_dist[j][k]) * error_term
+                grad[k][1] += ((loc[k][1] - loc[j][1]) / fake_dist[j][k]) * error_term
+
+                # 记录总的误差
+                total_error += abs(error_term)
+
+        print total_error
+
+        # 节点移动后更糟后,过程结束
+        if last_error and last_error < total_error:
+            break
+        last_error = total_error
+
+        # 根据rate参数与grad值相乘的结果,移动每一个节点
+        for k in range(n):
+            loc[k][0] -= rate * grad[k][0]
+            loc[k][1] -= rate * grad[k][1]
+    return loc
+
+
+def draw_2d(data, labels, jpeg='mds2d.jpg'):
+    """
+    绘制数据项的位置关系和对应标签.
+    :param data: 数据向量集.
+    :param labels: 标签列表,用于展示.
+    :param jpeg: 图片路径和名称.
+    :return: None
+    """
+    img = Image.new('RGB', (2000, 2000), (255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    for i in range(len(data)):
+        x = (data[i][0] + .5) * 1000
+        y = (data[i][1] + .5) * 1000
+        draw.text((x, y), labels[i], (0, 0, 0))
+    img.save(jpeg, 'JPEG')
+
 if __name__ == '__main__':
     blog_titles, words, vec_data = readfile('blogdata.txt')
     blog_clust = hcluster(vec_data)
@@ -349,11 +422,14 @@ if __name__ == '__main__':
     # print 'k均值聚类结果:'
     # k_clust = kmeans_cluster(vec_data, k=10)
     # print [blog_titles[r] for r in k_clust[0]]
+    #
+    # print '针对zebo数据集计算并绘制图像:',
+    # wants, people, wants_data = readfile('zebo.txt')
+    # wants_clust = hcluster(wants_data, distance=tanimoto)
+    # drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
+    # print '绘制完成,图像已存储.'
 
-    print '针对zebo数据集计算并绘制图像:',
-    wants, people, data = readfile('zebo.txt')
-    wants_clust = hcluster(data, distance=tanimoto)
-    drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
-    print '绘制完成,图像已存储.'
+    coords = scale_down(vec_data)
+    draw_2d(coords, blog_titles, jpeg='blogs2d.jpg')
 
     print '<结束>'
