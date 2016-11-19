@@ -246,8 +246,31 @@ def draw_node(draw, clust, x, y, scaling, labels):
         draw.text((x+5, y-7), labels[clust.id], (0, 0, 0))
 
 
+def rotate_matrix(data):
+    """
+    数据集转置,该例中用来分析数据集:每个单词再不同文章中出现的次数.
+    实际场景中,可以分析类似那些产品可以捆绑销售.
+    :param data: 待转置的数据集.
+    :return: 转置后的数据集.
+    """
+    new_data = list()
+    for i in range(len(data[0])):
+        new_row = [data[j][i] for j in range(len(data))]
+        new_data.append(new_row)
+    return new_data
+
+
 if __name__ == '__main__':
     blog_titles, words, vec_data = readfile('blogdata.txt')
-    clust_result = hcluster(vec_data)
-#    print_clust(clust_result, labels=blog_titles)
-    drawdendrogram(clust_result, blog_titles, jpeg='blogclust.jpg')
+    blog_clust = hcluster(vec_data)
+    print '打印分级聚类到命令行:'
+    print_clust(blog_clust, labels=blog_titles)
+
+    print '绘制分级聚类图像:'
+    drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
+
+    print '绘制单词的分级聚类:'
+    rotate_data = rotate_matrix(vec_data)
+    word_clust = hcluster(rotate_data)
+    drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
+    print '<结束>'
