@@ -340,9 +340,8 @@ def scale_down(data, distance=pearson, rate=.001):
     """
     n = len(data)
 
-    # 没一队数据项之间的真实距离
+    # 每一队数据项之间的真实距离
     real_dist = [[distance(data[i], data[j]) for j in range(n)] for i in range(n)]
-    outer_sum = .0
 
     # 随机初始化节点在二维空间的起始位置
     loc = [[random.random(), random.random()] for _ in range(n)]
@@ -406,28 +405,28 @@ def draw_2d(data, labels, jpeg='mds2d.jpg'):
 if __name__ == '__main__':
     blog_titles, words, vec_data = readfile('blogdata.txt')
     blog_clust = hcluster(vec_data)
-    # print '打印分级聚类到命令行:'
-    # print_clust(blog_clust, labels=blog_titles)
-    #
-    # print '绘制分级聚类图像:',
-    # drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
-    # print '绘制完成,图像已存储.'
-    #
-    # print '绘制单词的分级聚类:',
-    # rotate_data = rotate_matrix(vec_data)
-    # word_clust = hcluster(rotate_data)
-    # drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
-    # print '绘制完成,图像已存储.'
-    #
-    # print 'k均值聚类结果:'
-    # k_clust = kmeans_cluster(vec_data, k=10)
-    # print [blog_titles[r] for r in k_clust[0]]
-    #
-    # print '针对zebo数据集计算并绘制图像:',
-    # wants, people, wants_data = readfile('zebo.txt')
-    # wants_clust = hcluster(wants_data, distance=tanimoto)
-    # drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
-    # print '绘制完成,图像已存储.'
+    print '打印分级聚类到命令行:'
+    print_clust(blog_clust, labels=blog_titles)
+
+    print '绘制分级聚类图像:',
+    drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
+    print '绘制完成,图像已存储.'
+
+    print '绘制单词的分级聚类:',
+    rotate_data = rotate_matrix(vec_data)
+    word_clust = hcluster(rotate_data)
+    drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
+    print '绘制完成,图像已存储.'
+
+    print 'k均值聚类结果:'
+    k_clust = kmeans_cluster(vec_data, k=10)
+    print [blog_titles[r] for r in k_clust[0]]
+
+    print '针对zebo数据集计算并绘制图像:',
+    wants, people, wants_data = readfile('zebo.txt')
+    wants_clust = hcluster(wants_data, distance=tanimoto)
+    drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
+    print '绘制完成,图像已存储.'
 
     coords = scale_down(vec_data)
     draw_2d(coords, blog_titles, jpeg='blogs2d.jpg')
