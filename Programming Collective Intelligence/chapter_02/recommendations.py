@@ -111,7 +111,8 @@ def sim_pearson(prefs, p1, p2):
     # 皮尔逊距离计算
     num = p_sum - (sum1 * sum2) / n
     den = sqrt((sum1_sq - pow(sum1, 2) / n) * (sum2_sq - pow(sum2, 2) / n))
-
+    if den == 0:
+        return 0
     return num / den
 
 
@@ -254,6 +255,29 @@ def get_recommended_items(prefs, item_match, user):
     return rankings
 
 
+def load_movielens(path='data/movielens'):
+    """
+    从网络下载的MovieLens数据集,然后使用该函数加载成为评分表.
+    下载地址: "http://grouplens.org/datasets/movielens/"下十万条数据集.
+    :param path: 数据集路径.
+    :return: 电影评分表.
+    """
+    # 获取影片id到标题的映射关系
+    movies = dict()
+    with open(path + '/u.item') as f:
+        for line in f:
+            m_id, title = line.split('|')[:2]
+            movies[m_id] = title
+    # 生成影片评分表
+    prefs = dict()
+    with open(path + '/u.data') as f:
+        for line in f:
+            u_id, m_id, rating, ts = line.split('\t')
+            prefs.setdefault(u_id, {})
+            prefs[u_id][movies[m_id]] = float(rating)
+    return prefs
+
+
 if __name__ == '__main__':
     print 'Lisa Rose 与 Gene Seymour 的欧几里得距离评价'
     print sim_distance(critics, 'Lisa Rose', 'Gene Seymour')
@@ -271,8 +295,8 @@ if __name__ == '__main__':
     print get_recommendations(critics, 'Toby', similarity=sim_distance)
 
     print '\n通过用户们对各个电影的评分,计算 Superman Returns 最相近的电影列表'
-    movies = _transform_prefs(critics)
-    print top_matches(movies, 'Superman Returns')
+    movies_critics = _transform_prefs(critics)
+    print top_matches(movies_critics, 'Superman Returns')
 
     print '\n计算最相似的物品,使用欧几里得距离'
     item_sim = calculate_similar_items(critics)
@@ -280,3 +304,12 @@ if __name__ == '__main__':
 
     print '\n给 Toby 的推荐电影,使用物品相似度表'
     print get_recommended_items(critics, item_sim, 'Toby')
+
+    print '\n使用MovieLens数据集:'
+    prefs_dict = load_movielens()
+    print '\t依据相似用户给87用户的推荐电影'
+    print get_recommendations(prefs_dict, '87')[:30]
+
+    item_sim = calculate_similar_items(prefs_dict, n=50)
+    print '\t使用相似物品表给87用户推荐电影'
+    print get_recommended_items(prefs_dict, item_sim, '87')[:30]
