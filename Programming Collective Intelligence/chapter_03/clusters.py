@@ -57,6 +57,8 @@ def pearson(v1, v2):
     length = float(len(v1))
     num = p_sum - (sum1 * sum2) / length
     den = sqrt((sum1_sq - pow(sum1, 2) / length) * (sum2_sq - pow(sum2, 2) / length))
+    if den == 0:
+        return 0
 
     return 1.0 - num / den
 
@@ -372,7 +374,7 @@ def scale_down(data, distance=pearson, rate=.001):
                 # 记录总的误差
                 total_error += abs(error_term)
 
-        print total_error
+        # print total_error
 
         # 节点移动后更糟后,过程结束
         if last_error and last_error < total_error:
@@ -403,19 +405,19 @@ def draw_2d(data, labels, jpeg='mds2d.jpg'):
     img.save(jpeg, 'JPEG')
 
 if __name__ == '__main__':
-    blog_titles, words, vec_data = readfile('blogdata.txt')
+    blog_titles, words, vec_data = readfile('data/blogdata.txt')
     blog_clust = hcluster(vec_data)
     print '打印分级聚类到命令行:'
     print_clust(blog_clust, labels=blog_titles)
 
-    print '绘制分级聚类图像:',
-    drawdendrogram(blog_clust, blog_titles, jpeg='blogclust.jpg')
+    print '绘制博客的分级聚类图像:',
+    drawdendrogram(blog_clust, blog_titles, jpeg='data/blogclust.jpg')
     print '绘制完成,图像已存储.'
 
-    print '绘制单词的分级聚类:',
+    print '绘制单词的分级聚类图像:',
     rotate_data = rotate_matrix(vec_data)
     word_clust = hcluster(rotate_data)
-    drawdendrogram(word_clust, words, jpeg='wordclust.jpg')
+    drawdendrogram(word_clust, words, jpeg='data/wordclust.jpg')
     print '绘制完成,图像已存储.'
 
     print 'k均值聚类结果:'
@@ -423,12 +425,14 @@ if __name__ == '__main__':
     print [blog_titles[r] for r in k_clust[0]]
 
     print '针对zebo数据集计算并绘制图像:',
-    wants, people, wants_data = readfile('zebo.txt')
+    wants, people, wants_data = readfile('data/zebo.txt')
     wants_clust = hcluster(wants_data, distance=tanimoto)
-    drawdendrogram(wants_clust, wants, jpeg='zobowants.jpg')
+    drawdendrogram(wants_clust, wants, jpeg='data/zebowants.jpg')
     print '绘制完成,图像已存储.'
 
+    print '绘制博客数据的二维缩放:',
     coords = scale_down(vec_data)
-    draw_2d(coords, blog_titles, jpeg='blogs2d.jpg')
+    draw_2d(coords, blog_titles, jpeg='data/blogs2d.jpg')
+    print '绘制完成,图像已存储.'
 
     print '<结束>'
