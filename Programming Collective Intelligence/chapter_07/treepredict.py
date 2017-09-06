@@ -168,7 +168,6 @@ def print_tree(tree, indent=''):
 
 
 if __name__ == '__main__':
-    # test
     divide_result = divide_set(my_data, 2, 'yes')
     divide_set1, divide_set2 = divide_result
 
